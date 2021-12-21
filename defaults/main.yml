@@ -1,0 +1,34 @@
+---
+# do not edit this list
+linux_update_yum_repos:
+  - CentOS-Base
+  - CentOS-CR
+  - CentOS-Debuginfo
+  - CentOS-fasttrack
+  - CentOS-Media
+  - CentOS-Sources
+  - CentOS-Vault
+
+linux_update_messages: false
+
+# Do not include the final '/' in the path
+linux_update_package_info_path: /var/linux_updates
+
+linux_update_health_check_url: []
+linux_update_health_check_valide_cert: false
+
+linux_update_old_kernels: 1
+
+linux_update_pre_cmd: []
+linux_update_post_cmd: []
+
+linux_update_pre_tasks_playbook: []
+linux_update_pre_reboot_playbook: []
+linux_update_post_reboot_playbook: []
+linux_update_post_tasks_playbook: []
+
+linux_update_applications: []
+
+linux_update_excl: []
+
+linux_update_reboot: true

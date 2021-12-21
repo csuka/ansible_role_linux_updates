@@ -1,0 +1,44 @@
+---
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+  flake8
+scenario:
+  name: default
+  test_sequence:
+    - destroy
+    - dependency
+    - cleanup
+    - syntax
+    - create
+    - create
+    - converge
+    # - idempotence
+    - lint
+    - verify
+dependency:
+  name: galaxy
+driver:
+  name: docker
+provisioner:
+  name: ansible
+verifier:
+  name: ansible
+platforms:
+  - name: test-multi-01
+    hostname: test-multi-01
+    image: alekseychudov/centos8-systemd
+    pull: true
+    command: "/usr/sbin/init"  # to use systemd
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    tmpfs:
+      - /run
+      - /tmp
+    tty: true
+    environment:
+      container: docker
+    pre_build_image: true
+    networks:
+      - name: test_network

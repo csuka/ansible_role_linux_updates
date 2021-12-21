@@ -1,0 +1,212 @@
+---
+- block:
+    - name: get current user
+      shell: whoami
+      register: me
+      become: false
+
+    - name: include user defined pre tasks playbook
+      include: "{{ linux_update_pre_tasks_playbook }}"
+      when: linux_update_pre_tasks_playbook | length > 0
+
+    - name: execute defined pre commands
+      shell: "{{ item }}"
+      loop: "{{ linux_update_pre_cmd }}"
+
+    - name: a message to teams/customer chat that updates are starting for hosts
+      debug:
+        msg: "Linux updates are starting for host(s) {{ ansible_play_hosts }}"
+      when: linux_update_messages
+      run_once: true
+
+    - name: get info about all installed packages
+      package_facts:
+        manager: auto
+
+    - name: ensure path exists to save package information on ansible master
+      file:
+        path: "{{ linux_update_package_info_path }}/\
+          {{ ansible_date_time.date }}/{{ inventory_hostname }}"
+        state: directory
+        mode: '0775'
+        owner: "{{ me.stdout }}"
+      delegate_to: localhost
+      tags: notest
+
+    - name: save pre info of packages on ansible master
+      copy:
+        content: "{{ ansible_facts.packages | to_nice_json }}"
+        dest: "{{ linux_update_package_info_path }}/\
+          {{ ansible_date_time.date }}/\
+          {{ inventory_hostname }}/pre_packages.json"
+        mode: '0775'
+        owner: root
+      delegate_to: localhost
+      tags: notest
+
+    - name: perform pre health check on specific url when set
+      uri:
+        url: "{{ linux_update_health_check_url }}"
+        validate_certs: "{{ linux_update_health_check_valide_cert }}"
+      register: pre_health_check
+      when: linux_update_health_check_url | length > 0
+
+    - name: fail message when health check has not status 200
+      fail:
+        msg: "Pre update: the health check on url \
+          {{ linux_update_health_check_url }} did not return status 200"
+      when:
+        - pre_health_check.status is defined
+        - pre_health_check.status != 200
+
+    - name: a task to set host(s) in downtime in monitoring
+      shell: echo
+      changed_when: false
+
+    - name: a task to configure the loadbalancer to set host(s) in downtime
+      shell: echo
+      changed_when: false
+
+    - name: touch default repo files
+      file:
+        path: "/etc/yum.repos.d/{{ item }}.repo"
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ linux_update_yum_repos }}"
+      changed_when: false
+
+    - name: remove old kernel files on centos 8 hosts
+      shell: "dnf remove $(dnf repoquery --installonly \
+        --latest-limit=-{{ linux_update_old_kernels }} -q) -y"
+      register: remove_old_kernel
+      changed_when: "'Nothing to do' not in remove_old_kernel.stdout"
+      args:
+        warn: false
+
+    - name: remove cache folder dnf
+      file:
+        path: /var/cache/dnf
+        state: absent
+
+    # there is no Ansible module to clean 'dnf'
+    # https://docs.ansible.com/ansible/latest/modules/yum_module.html
+    - name: execute 'dnf clean all'
+      shell: dnf clean all
+      changed_when: false
+      args:
+        warn: false
+
+    - name: stop user defined applications, ignore errors
+      service:
+        name: "{{ item }}"
+        state: stopped
+      loop: "{{ linux_update_applications }}"
+      ignore_errors: true
+
+    - name: update packages on host(s)
+      dnf:
+        name: '*'
+        state: latest
+        update_cache: true
+        exclude: "{{ linux_update_excl | join(' ') }}"
+      register: yum_update
+
+    - name: again, get info about all installed packages
+      package_facts:
+        manager: auto
+
+    - name: save post info of packages on ansible master
+      copy:
+        content: "{{ ansible_facts.packages | to_nice_json }}"
+        dest: "{{ linux_update_package_info_path }}/\
+          {{ ansible_date_time.date }}/\
+          {{ inventory_hostname }}/post_packages.json"
+        mode: '0775'
+        owner: root
+      delegate_to: localhost
+      run_once: true
+      tags: notest
+
+    - name: include user defined pre reboot playbook
+      include: "{{ linux_update_pre_reboot_playbook }}"
+      when: linux_update_pre_reboot_playbook | length > 0
+
+    - name: reboot hosts when applicable
+      reboot:
+        post_reboot_delay: 3
+      tags: notest
+      when: >
+         yum_update.changed is defined and yum_update.changed or
+         linux_update_reboot
+
+    - name: include user defined post reboot playbook
+      include: "{{ linux_update_post_reboot_playbook }}"
+      when: linux_update_post_reboot_playbook | length > 0
+
+    - name: again, touch default repo files
+      file:
+        path: "/etc/yum.repos.d/{{ item }}.repo"
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ linux_update_yum_repos }}"
+      changed_when: false
+
+    - name: execute defined post commands
+      shell: "{{ item }}"
+      loop: "{{ linux_update_post_cmd }}"
+
+    - name: ensure applications are started, but in reverse
+      service:
+        name: "{{ item }}"
+        state: started
+      when: linux_update_applications | length > 0
+      loop: "{{ linux_update_applications | reverse | list }}"
+
+    - name: perform post health check
+      uri:
+        url: "{{ linux_update_health_check_url }}"
+        validate_certs: "{{ linux_update_health_check_valide_cert }}"
+      register: post_health_check
+      when: linux_update_health_check_url | length > 0
+
+    - name: fail message when health check has not status 200
+      fail:
+        msg: "Post update: the health check on url \
+          {{ linux_update_health_check_url }} did not return status 200"
+      when:
+        - post_health_check.status is defined
+        - post_health_check.status != 200
+
+    - name: remove downtime for server in monitoring
+      shell: echo
+      changed_when: false
+
+    - name: remove loadbalancer downtime
+      shell: echo
+      changed_when: false
+
+    - name: include user defined post tasks playbook
+      include: "{{ linux_update_post_tasks_playbook }}"
+      when: linux_update_post_tasks_playbook | length > 0
+
+    - name: a message to a chat that updates succeeded
+      shell: "echo {{ ansible_play_hosts }} OK"
+      when: linux_update_messages
+      changed_when: false
+      run_once: true
+
+  rescue:
+    - name: send message to a chat that updates failed
+      shell: "echo {{ ansible_play_hosts }} FAILED"
+      when: linux_update_messages
+      run_once: true
+
+    - name: enable monitoring for host
+      shell: echo
+
+    - name: even though we are rescued, we should fail either way
+      shell: /bin/false
