@@ -11,8 +11,7 @@ linux_update_yum_repos:
 
 linux_update_messages: false
 
-# Do not include the final '/' in the path
-linux_update_package_info_path: /var/linux_updates
+linux_update_package_info_path: /var/linux_updates/
 
 linux_update_health_check_url: []
 linux_update_health_check_valide_cert: false

@@ -2,4 +2,4 @@
 - name: Converge
   hosts: test-multi-01
   roles:
-    - ../ansible_role_linux_updates
+    - ../linux-update

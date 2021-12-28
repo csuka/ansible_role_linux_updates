@@ -1,6 +1,5 @@
 ---
 skip_list:
-  - 'ignore-errors'
   - '305'
   - '503'
   - '403'

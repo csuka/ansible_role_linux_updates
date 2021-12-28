@@ -25,8 +25,9 @@
 
     - name: ensure path exists to save package information on ansible master
       file:
-        path: "{{ linux_update_package_info_path }}/\
-          {{ ansible_date_time.date }}/{{ inventory_hostname }}"
+        path: >-
+          {{ linux_update_package_info_path }}
+          {{- ansible_date_time.date }}/{{ inventory_hostname }}
         state: directory
         mode: '0775'
         owner: "{{ me.stdout }}"
@@ -36,9 +37,9 @@
     - name: save pre info of packages on ansible master
       copy:
         content: "{{ ansible_facts.packages | to_nice_json }}"
-        dest: "{{ linux_update_package_info_path }}/\
-          {{ ansible_date_time.date }}/\
-          {{ inventory_hostname }}/pre_packages.json"
+        dest: >-
+          {{ linux_update_package_info_path }}/{{ ansible_date_time.date }}/
+          {{- inventory_hostname }}/pre_packages.json"
         mode: '0775'
         owner: root
       delegate_to: localhost
@@ -53,8 +54,9 @@
 
     - name: fail message when health check has not status 200
       fail:
-        msg: "Pre update: the health check on url \
-          {{ linux_update_health_check_url }} did not return status 200"
+        msg: >-
+	  Pre update: the health check on url 
+          {{ linux_update_health_check_url }} did not return status 200
       when:
         - pre_health_check.status is defined
         - pre_health_check.status != 200
@@ -78,8 +80,9 @@
       changed_when: false
 
     - name: remove old kernel files on centos 8 hosts
-      shell: "dnf remove $(dnf repoquery --installonly \
-        --latest-limit=-{{ linux_update_old_kernels }} -q) -y"
+      shell: >-
+        dnf remove $(dnf repoquery --installonly
+        --latest-limit=-{{ linux_update_old_kernels }} -q) -y
       register: remove_old_kernel
       changed_when: "'Nothing to do' not in remove_old_kernel.stdout"
       args:
@@ -120,9 +123,10 @@
     - name: save post info of packages on ansible master
       copy:
         content: "{{ ansible_facts.packages | to_nice_json }}"
-        dest: "{{ linux_update_package_info_path }}/\
-          {{ ansible_date_time.date }}/\
-          {{ inventory_hostname }}/post_packages.json"
+        dest: >-
+          {{ linux_update_package_info_path }}
+          {{- ansible_date_time.date }}/
+          {{- inventory_hostname }}/post_packages.json
         mode: '0775'
         owner: root
       delegate_to: localhost
@@ -137,7 +141,7 @@
       reboot:
         post_reboot_delay: 3
       tags: notest
-      when: >
+      when: >-
          yum_update.changed is defined and yum_update.changed or
          linux_update_reboot
 
@@ -175,8 +179,9 @@
 
     - name: fail message when health check has not status 200
       fail:
-        msg: "Post update: the health check on url \
-          {{ linux_update_health_check_url }} did not return status 200"
+        msg: |
+          Post update: the health check on url
+          {{ linux_update_health_check_url }} did not return status 200
       when:
         - post_health_check.status is defined
         - post_health_check.status != 200
@@ -209,4 +214,5 @@
       shell: echo
 
     - name: even though we are rescued, we should fail either way
-      shell: /bin/false
+      fail:
+        msg: update failed
