@@ -1,3 +1,7 @@
+# Linux Updates Role
+
+This role is used to update packages/kernels for EL 8 systems.
+
 # Functionalities
 
  * Send status messages to a chat application, also alert when something failed
