@@ -55,7 +55,7 @@
     - name: fail message when health check has not status 200
       fail:
         msg: >-
-	  Pre update: the health check on url 
+          Pre update; the health check on url
           {{ linux_update_health_check_url }} did not return status 200
       when:
         - pre_health_check.status is defined

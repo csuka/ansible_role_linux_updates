@@ -3,3 +3,5 @@ skip_list:
   - '305'
   - '503'
   - '403'
+  - yaml
+  - ignore-errors

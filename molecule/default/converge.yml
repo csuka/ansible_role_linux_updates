@@ -2,4 +2,4 @@
 - name: Converge
   hosts: test-multi-01
   roles:
-    - ../linux-update
+    - ../linux-updates

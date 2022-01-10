@@ -3,13 +3,18 @@ galaxy_info:
   author: Kevin Csuka
   role_name: linux_updates
   description: This role ensures linux hosts are updated with Ansible
-  license: Apache
-  min_ansible_version: 2.9.13
+  namespace: kcsuka
+  license: Apache License, Version 2.0
+  min_ansible_version: 2.9
   platforms:
     - name: EL
       versions:
         - 8
   galaxy_tags:
-    - linux-updates
+    - linux
+    - system
+    - updates
+    - update
+    - package
 
 dependencies: []
