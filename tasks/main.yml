@@ -4,9 +4,10 @@
       shell: whoami
       register: me
       become: false
+      changed_when: false
 
     - name: include user defined pre tasks playbook
-      include: "{{ linux_update_pre_tasks_playbook }}"
+      include_tasks: "{{ linux_update_pre_tasks_playbook }}"
       when: linux_update_pre_tasks_playbook | length > 0
 
     - name: execute defined pre commands
@@ -92,6 +93,7 @@
       file:
         path: /var/cache/dnf
         state: absent
+      changed_when: false
 
     # there is no Ansible module to clean 'dnf'
     # https://docs.ansible.com/ansible/latest/modules/yum_module.html
@@ -134,7 +136,7 @@
       tags: notest
 
     - name: include user defined pre reboot playbook
-      include: "{{ linux_update_pre_reboot_playbook }}"
+      include_tasks: "{{ linux_update_pre_reboot_playbook }}"
       when: linux_update_pre_reboot_playbook | length > 0
 
     - name: reboot hosts when applicable
@@ -146,7 +148,7 @@
          linux_update_reboot
 
     - name: include user defined post reboot playbook
-      include: "{{ linux_update_post_reboot_playbook }}"
+      include_tasks: "{{ linux_update_post_reboot_playbook }}"
       when: linux_update_post_reboot_playbook | length > 0
 
     - name: again, touch default repo files
@@ -195,7 +197,7 @@
       changed_when: false
 
     - name: include user defined post tasks playbook
-      include: "{{ linux_update_post_tasks_playbook }}"
+      include_tasks: "{{ linux_update_post_tasks_playbook }}"
       when: linux_update_post_tasks_playbook | length > 0
 
     - name: a message to a chat that updates succeeded
