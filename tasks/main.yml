@@ -1,5 +1,6 @@
 ---
 - block:
+
     - name: get current user
       shell: whoami
       register: me

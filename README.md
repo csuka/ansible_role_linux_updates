@@ -1,8 +1,9 @@
-# Linux Updates Role
+# Linux Updates
 
-This role is used to update packages/kernels for EL 8 systems.
+An Ansible role that installs, configures and manages linux updates for EL 8.
 
-# Functionalities
+
+## Functionalities
 
  * Send status messages to a chat application, also alert when something failed
  * Set downtime in a monitoring tool
